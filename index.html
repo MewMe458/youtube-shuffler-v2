@@ -61,6 +61,19 @@
     </div>
 
     <script>
+        // Load saved data on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('yt_api_key');
+            const savedUrl = localStorage.getItem('yt_playlist_url');
+            if (savedKey) document.getElementById('apiKey').value = savedKey;
+            if (savedUrl) document.getElementById('playlistUrl').value = savedUrl;
+
+            const savedState = JSON.parse(localStorage.getItem('yt_shuffled_state'));
+            if (savedState) {
+                restoreSession(savedState);
+            }
+        });
+
         async function shufflePlaylist() {
             const urlInput = document.getElementById('playlistUrl').value.trim();
             const outputDiv = document.getElementById('output');
@@ -97,6 +110,9 @@
                     alert('Please enter your YouTube API Key.');
                     return;
                 }
+                // Save inputs
+                localStorage.setItem('yt_api_key', apiKey);
+                localStorage.setItem('yt_playlist_url', urlInput);
 
                 let videos = [];
                 let videoDetails = []; // Add this to track titles/channels
@@ -134,6 +150,13 @@
                     [videos[i], videos[j]] = [videos[j], videos[i]];
                     [videoDetails[i], videoDetails[j]] = [videoDetails[j], videoDetails[i]]; // Sync the shuffle
                 }
+
+                // Save shuffled state to localStorage
+                localStorage.setItem('yt_shuffled_state', JSON.stringify({
+                    videos,
+                    videoDetails,
+                    currentIndex: 0
+                }));
 
                 outputDiv.innerHTML = '';
                 
@@ -174,6 +197,13 @@
                         document.getElementById('status').innerText = `Video ${currentIndex + 1}/${videos.length}`;
                         const videoId = videos[currentIndex].split('v=')[1];
                         player.loadVideoById(videoId);
+                        
+                        // Save progress
+                        const state = JSON.parse(localStorage.getItem('yt_shuffled_state'));
+                        if (state) {
+                            state.currentIndex = currentIndex;
+                            localStorage.setItem('yt_shuffled_state', JSON.stringify(state));
+                        }
                     };
 
                     listDiv.appendChild(item);
@@ -210,6 +240,13 @@
                         document.getElementById('status').innerText = `Video ${currentIndex + 1}/${videos.length}`;
                         const nextVideoId = videos[currentIndex].split('v=')[1];
                         player.loadVideoById(nextVideoId);
+                        
+                        // Save progress
+                        const state = JSON.parse(localStorage.getItem('yt_shuffled_state'));
+                        if (state) {
+                            state.currentIndex = currentIndex;
+                            localStorage.setItem('yt_shuffled_state', JSON.stringify(state));
+                        }
                     } else {
                         document.getElementById('status').innerText = 'Finished!';
                         outputDiv.innerHTML += '<p>All videos in the shuffled list have played!</p>';
@@ -219,6 +256,97 @@
             } catch (error) {
                 outputDiv.innerHTML = 'Error: ' + error.message;
             }
+        }
+
+        function restoreSession(state) {
+            const { videos, videoDetails, currentIndex } = state;
+            const outputDiv = document.getElementById('output');
+            
+            // Re-create UI elements
+            outputDiv.innerHTML = '';
+            
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'status';
+            statusDiv.style.textAlign = 'center';
+            statusDiv.style.fontWeight = 'bold';
+            statusDiv.style.marginBottom = '10px';
+            outputDiv.appendChild(statusDiv);
+
+            const playerDiv = document.createElement('div');
+            playerDiv.id = 'player';
+            outputDiv.appendChild(playerDiv);
+
+            const listDiv = document.createElement('div');
+            listDiv.id = 'playlist-display';
+            listDiv.style.marginTop = '20px';
+            listDiv.style.maxHeight = '300px';
+            listDiv.style.overflowY = 'auto';
+            listDiv.style.border = '1px solid #ddd';
+            listDiv.style.padding = '10px';
+            listDiv.style.backgroundColor = '#f9f9f9';
+            listDiv.style.fontSize = '0.9rem';
+            outputDiv.appendChild(listDiv);
+
+            // Local variables for the session
+            window._sessionVideos = videos;
+            window._sessionDetails = videoDetails;
+            window._sessionIndex = currentIndex;
+
+            videoDetails.forEach((vid, index) => {
+                const item = document.createElement('div');
+                item.style.padding = '5px 0';
+                item.style.borderBottom = '1px solid #eee';
+                item.style.cursor = 'pointer';
+                item.style.color = '#065fd4';
+                item.innerText = `${index + 1}. ${vid.title} — ${vid.channel}`;
+                item.onclick = () => {
+                    window._sessionIndex = index;
+                    document.getElementById('status').innerText = `Video ${window._sessionIndex + 1}/${videos.length}`;
+                    const videoId = videos[window._sessionIndex].split('v=')[1];
+                    window._player.loadVideoById(videoId);
+                    
+                    const currentState = JSON.parse(localStorage.getItem('yt_shuffled_state'));
+                    if (currentState) {
+                        currentState.currentIndex = window._sessionIndex;
+                        localStorage.setItem('yt_shuffled_state', JSON.stringify(currentState));
+                    }
+                };
+                listDiv.appendChild(item);
+            });
+
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            document.head.appendChild(tag);
+
+            window.onYouTubeIframeAPIReady = () => {
+                document.getElementById('status').innerText = `Video ${currentIndex + 1}/${videos.length}`;
+                window._player = new YT.Player('player', {
+                    height: '315',
+                    width: '560',
+                    videoId: videos[currentIndex].split('v=')[1],
+                    events: {
+                        'onStateChange': (event) => {
+                            if (event.data === YT.PlayerState.ENDED) {
+                                window._sessionIndex++;
+                                if (window._sessionIndex < videos.length) {
+                                    document.getElementById('status').innerText = `Video ${window._sessionIndex + 1}/${videos.length}`;
+                                    const nextVideoId = videos[window._sessionIndex].split('v=')[1];
+                                    window._player.loadVideoById(nextVideoId);
+                                    
+                                    const currentState = JSON.parse(localStorage.getItem('yt_shuffled_state'));
+                                    if (currentState) {
+                                        currentState.currentIndex = window._sessionIndex;
+                                        localStorage.setItem('yt_shuffled_state', JSON.stringify(currentState));
+                                    }
+                                } else {
+                                    document.getElementById('status').innerText = 'Finished!';
+                                    outputDiv.innerHTML += '<p>All videos in the shuffled list have played!</p>';
+                                }
+                            }
+                        }
+                    }
+                });
+            };
         }
     </script>
 </body>
