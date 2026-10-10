@@ -98,14 +98,25 @@
                     return;
                 }
 
-                const response = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${listId}&key=${apiKey}`);
-                const data = await response.json();
+                let videos = [];
+                let nextPageToken = '';
 
-                if (data.error) {
-                    throw new Error(data.error.message);
-                }
+                do {
+                    // Include pageToken in the URL to get the next set of results
+                    const response = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${listId}&pageToken=${nextPageToken}&key=${apiKey}`);
+                    const data = await response.json();
 
-                let videos = data.items.map(item => `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`);
+                    if (data.error) {
+                        throw new Error(data.error.message);
+                    }
+
+                    // Collect video URLs from the current batch
+                    const batch = data.items.map(item => `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`);
+                    videos = videos.concat(batch);
+
+                    // Update the token for the next request, or set to empty to stop the loop
+                    nextPageToken = data.nextPageToken || '';
+                } while (nextPageToken);
                 
                 if (videos.length === 0) {
                     outputDiv.innerHTML = 'No videos found in this playlist.';
