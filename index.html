@@ -164,7 +164,18 @@
                     const item = document.createElement('div');
                     item.style.padding = '5px 0';
                     item.style.borderBottom = '1px solid #eee';
+                    item.style.cursor = 'pointer'; // Makes it look clickable
+                    item.style.color = '#065fd4';   // Makes it look like a link
                     item.innerText = `${index + 1}. ${vid.title} — ${vid.channel}`;
+
+                    // Handle the click event to jump to the video
+                    item.onclick = () => {
+                        currentIndex = index;
+                        document.getElementById('status').innerText = `Video ${currentIndex + 1}/${videos.length}`;
+                        const videoId = videos[currentIndex].split('v=')[1];
+                        player.loadVideoById(videoId);
+                    };
+
                     listDiv.appendChild(item);
                 });
 
