@@ -132,6 +132,13 @@
                 outputDiv.innerHTML = '';
                 
                 // Use the YouTube IFrame Player API for sequence control
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'status';
+                statusDiv.style.textAlign = 'center';
+                statusDiv.style.fontWeight = 'bold';
+                statusDiv.style.marginBottom = '10px';
+                outputDiv.appendChild(statusDiv);
+
                 const playerDiv = document.createElement('div');
                 playerDiv.id = 'player';
                 outputDiv.appendChild(playerDiv);
@@ -145,6 +152,7 @@
                 let player;
 
                 window.onYouTubeIframeAPIReady = () => {
+					document.getElementById('status').innerText = `Video 1/${videos.length}`;
                     player = new YT.Player('player', {
                         height: '315',
                         width: '560',
@@ -163,9 +171,11 @@
                 function playNext() {
                     currentIndex++;
                     if (currentIndex < videos.length) {
+                        document.getElementById('status').innerText = `Video ${currentIndex + 1}/${videos.length}`;
                         const nextVideoId = videos[currentIndex].split('v=')[1];
                         player.loadVideoById(nextVideoId);
                     } else {
+                        document.getElementById('status').innerText = 'Finished!';
                         outputDiv.innerHTML += '<p>All videos in the shuffled list have played!</p>';
                     }
                 }
