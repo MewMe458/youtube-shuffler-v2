@@ -130,29 +130,45 @@
                 }
 
                 outputDiv.innerHTML = '';
-                videos.forEach((url, index) => {
-                    const videoId = url.split('v=')[1];
-                    const container = document.createElement('div');
-                    container.className = 'video-link';
-                    container.style.marginBottom = '20px';
-                    
-                    const title = document.createElement('p');
-                    title.textContent = `Video ${index + 1}`;
-                    title.style.fontWeight = 'bold';
-                    title.style.margin = '0 0 10px 0';
-                    
-                    const iframe = document.createElement('iframe');
-                    iframe.width = '560';
-                    iframe.height = '315';
-                    iframe.src = `https://www.youtube.com/embed/${videoId}`;
-                    iframe.frameBorder = '0';
-                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-                    iframe.allowFullscreen = true;
-                    
-                    container.appendChild(title);
-                    container.appendChild(iframe);
-                    outputDiv.appendChild(container);
-                });
+                
+                // Use the YouTube IFrame Player API for sequence control
+                const playerDiv = document.createElement('div');
+                playerDiv.id = 'player';
+                outputDiv.appendChild(playerDiv);
+
+                // Load the YouTube IFrame API script
+                const tag = document.createElement('script');
+                tag.src = 'https://www.youtube.com/iframe_api';
+                document.head.appendChild(tag);
+
+                let currentIndex = 0;
+                let player;
+
+                window.onYouTubeIframeAPIReady = () => {
+                    player = new YT.Player('player', {
+                        height: '315',
+                        width: '560',
+                        videoId: videos[0].split('v=')[1],
+                        events: {
+                            'onStateChange': (event) => {
+                                // YT.PlayerState.ENDED = 0
+                                if (event.data === YT.PlayerState.ENDED) {
+                                    playNext();
+                                }
+                            }
+                        }
+                    });
+                };
+
+                function playNext() {
+                    currentIndex++;
+                    if (currentIndex < videos.length) {
+                        const nextVideoId = videos[currentIndex].split('v=')[1];
+                        player.loadVideoById(nextVideoId);
+                    } else {
+                        outputDiv.innerHTML += '<p>All videos in the shuffled list have played!</p>';
+                    }
+                }
 
             } catch (error) {
                 outputDiv.innerHTML = 'Error: ' + error.message;
