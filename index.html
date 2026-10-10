@@ -248,11 +248,20 @@
                             localStorage.setItem('yt_shuffled_state', JSON.stringify(state));
                         }
                     } else {
-                        document.getElementById('status').innerText = 'Finished!';
-                        outputDiv.innerHTML += '<p>All videos in the shuffled list have played!</p>';
+                        // Loop back to the start
+                        currentIndex = 0;
+                        document.getElementById('status').innerText = `Video ${currentIndex + 1}/${videos.length}`;
+                        const firstVideoId = videos[currentIndex].split('v=')[1];
+                        player.loadVideoById(firstVideoId);
+
+                        // Update saved state to the beginning
+                        const state = JSON.parse(localStorage.getItem('yt_shuffled_state'));
+                        if (state) {
+                            state.currentIndex = currentIndex;
+                            localStorage.setItem('yt_shuffled_state', JSON.stringify(state));
+                        }
                     }
                 }
-
             } catch (error) {
                 outputDiv.innerHTML = 'Error: ' + error.message;
             }
@@ -339,8 +348,17 @@
                                         localStorage.setItem('yt_shuffled_state', JSON.stringify(currentState));
                                     }
                                 } else {
-                                    document.getElementById('status').innerText = 'Finished!';
-                                    outputDiv.innerHTML += '<p>All videos in the shuffled list have played!</p>';
+                                    // Loop back to the start
+                                    window._sessionIndex = 0;
+                                    document.getElementById('status').innerText = `Video ${window._sessionIndex + 1}/${videos.length}`;
+                                    const firstVideoId = videos[window._sessionIndex].split('v=')[1];
+                                    window._player.loadVideoById(firstVideoId);
+
+                                    const currentState = JSON.parse(localStorage.getItem('yt_shuffled_state'));
+                                    if (currentState) {
+                                        currentState.currentIndex = window._sessionIndex;
+                                        localStorage.setItem('yt_shuffled_state', JSON.stringify(currentState));
+                                    }
                                 }
                             }
                         }
