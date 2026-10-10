@@ -120,12 +120,27 @@
 
                 outputDiv.innerHTML = '';
                 videos.forEach((url, index) => {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.target = '_blank';
-                    a.className = 'video-link';
-                    a.textContent = `Video ${index + 1}: ${url}`;
-                    outputDiv.appendChild(a);
+                    const videoId = url.split('v=')[1];
+                    const container = document.createElement('div');
+                    container.className = 'video-link';
+                    container.style.marginBottom = '20px';
+                    
+                    const title = document.createElement('p');
+                    title.textContent = `Video ${index + 1}`;
+                    title.style.fontWeight = 'bold';
+                    title.style.margin = '0 0 10px 0';
+                    
+                    const iframe = document.createElement('iframe');
+                    iframe.width = '560';
+                    iframe.height = '315';
+                    iframe.src = `https://www.youtube.com/embed/${videoId}`;
+                    iframe.frameBorder = '0';
+                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                    iframe.allowFullscreen = true;
+                    
+                    container.appendChild(title);
+                    container.appendChild(iframe);
+                    outputDiv.appendChild(container);
                 });
 
             } catch (error) {
